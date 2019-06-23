@@ -1,20 +1,27 @@
+"""Common interpolation routines
+
+Attributes
+----------
+_MOD_INTERP : str
+    Base interpolation kernel. Note that this takes the form of a format
+    string, and must be formatted with {f}=float or double when used.
+KernelConfigurationException : exception
+    Exception type raised by kernel wrappers
+BaseInterpolation : class
+    Base Interpolation class; handles all wrapping (extenders only need to
+    provide a weight function).
+"""
+
 import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 
-from matplotlib import pyplot as plt
 import numpy as np
 
 
-_MOD_IDW_WEIGHT = """
-__device__ {f} weight_function({f} x1, {f} y1, {f} x2, {f} y2) {{
-
-    {f} sum = pow(x1 - x2, 2) + pow(y1 - y2, 2);
-
-    if(sum < 0.000001) {{ return 1000000; }}
-    else {{ return rsqrt(sum); }}
-}}
-"""
+#
+# -- Main Kernel --------------------------------------------------------------
+#
 
 _MOD_INTERP = """
 __global__ void interpolate(
@@ -46,20 +53,38 @@ __global__ void interpolate(
 """
 
 
+#
+# -- Python Wrapper -----------------------------------------------------------
+#
+
 class KernelConfigurationException(Exception):
     """Exception raised by a misconfigured GPU kernel"""
     pass
 
 
-class IDWInterpolation:
+class BaseInterpolation:
+    """Base Interpolation class
+
+    Parameters
+    ----------
+    fsize : int
+        32 or 64; size of floating point type
+    block : int[3]
+        Block size. Should be a multiple of 32 (as per NVIDIA warp size
+        specifications). Defaults to 16*16 since 256 is around the recommended
+        size (128-512, with 512 being the limit for some cards)
+    """
 
     FLOAT_SIZES = {
         32: [np.float32, "float"],
         64: [np.float64, "double"]
     }
 
+    WEIGHT_FUNCTION = None
+
     def __init__(self, fsize=32, block=(16, 16, 1)):
 
+        # Check validity
         if block[2] != 1:
             raise KernelConfigurationException(
                 "Block size dimension 3 must be 1.")
@@ -72,11 +97,28 @@ class IDWInterpolation:
             raise KernelConfigurationException(
                 "Float size must be 32 or 64.")
 
+        # Set parameters
         self.FLOAT_TYPE, self.FLOAT_CTYPE = self.FLOAT_SIZES[fsize]
         self.BLOCK_SIZE = block
 
+        # Get kernel
+        self.__init_kernel()
+
+    def __init_kernel(self):
+        """Initialize kernel.
+
+        References the WEIGHT_FUNCTION attribute, which should be set by all
+        classes extending BaseInterpolation.
+        """
+
+        if self.WEIGHT_FUNCTION is None:
+            raise KernelConfigurationException(
+                "Attempted to initialize kernel with undefined weight "
+                "function. If you are writing your own weight_function, make "
+                "sure to set the WEIGHT_FUNCTION attribute.")
+
         self.__kernel = SourceModule(
-            (_MOD_IDW_WEIGHT + _MOD_INTERP).format(f=self.FLOAT_CTYPE)
+            (self.WEIGHT_FUNCTION + _MOD_INTERP).format(f=self.FLOAT_CTYPE)
         ).get_function("interpolate")
 
     def __get_grid(self, size):
@@ -119,6 +161,12 @@ class IDWInterpolation:
             Range of longitudes to capture. long_range[0] corresponds to
             result[:, 0], and long_range[1] corresponds to result[:, width].
 
+        Raises
+        ------
+        TypeError
+            Dimensions don't match, or if the data type does not match the
+            data type specified on module initialization.
+
         Returns
         -------
         np.array
@@ -137,7 +185,7 @@ class IDWInterpolation:
                 (longitudes.dtype != self.FLOAT_TYPE) or
                 (values.dtype != self.FLOAT_TYPE)):
             raise TypeError(
-                "Input data must be of type {}. To change the input type, set"
+                "Input data must be of type {}. To change the input type, set "
                 "the 'fsize' argument on initialization.".format(
                     self.FLOAT_TYPE.__name__))
 
@@ -163,23 +211,4 @@ class IDWInterpolation:
 
         # Fetch result
         cuda.memcpy_dtoh(res_cpu, res_gpu)
-
         return res_cpu
-
-
-if __name__ == '__main__':
-
-    coords = [
-        np.array([0, 0, 0, 0, 0, 0], dtype=np.float64),
-        np.array([0, 1, 2, 3, 4, 5], dtype=np.float64)
-    ]
-
-    values = np.array([0, 1, 2, 3, 4, 5], dtype=np.float64)
-
-    res = IDWInterpolation(fsize=64).interpolate(
-        coords[0], coords[1], values,
-        size=[128, 256], lat_range=[-3, 6], long_range=[-2, 9])
-
-    plt.imshow(res)
-    # plt.scatter((coords[1] + 2) / 11 * 256, (9 - (coords[0] + 3)) / 9 * 128)
-    plt.show()
