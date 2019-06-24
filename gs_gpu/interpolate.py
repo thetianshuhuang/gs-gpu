@@ -27,7 +27,8 @@ _MOD_INTERP = """
 __global__ void interpolate(
         {f} *lat_arr, {f} *long_arr, {f} *val, int size,
         {f} *res, int width_px, int height_px,
-        {f} lat_min, {f} long_min, {f} lat_max, {f} long_max)
+        {f} lat_min, {f} long_min, {f} lat_max, {f} long_max,
+        {f} idp)
 {{
     int px_x = threadIdx.x + blockIdx.x * blockDim.x;
     int px_y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -42,7 +43,8 @@ __global__ void interpolate(
         {f} weight;
 
         for(int i = 0; i < size; i++) {{
-            weight = weight_function(lat_arr[i], long_arr[i], lat_pt, long_pt);
+            weight = weight_function(
+                lat_arr[i], long_arr[i], lat_pt, long_pt, idp);
             total_weight += weight;
             acc += weight * val[i];
         }}
@@ -141,7 +143,7 @@ class BaseInterpolation:
 
     def interpolate(
             self, latitudes, longitudes, values,
-            size=(1024, 1024), lat_range=(0, 1), long_range=(0, 1)):
+            size=(1024, 1024), lat_range=(0, 1), long_range=(0, 1), idp=2):
         """Run interpolation
 
         Parameters
@@ -207,6 +209,7 @@ class BaseInterpolation:
             res_gpu, np.int32(res_cpu.shape[1]), np.int32(res_cpu.shape[0]),
             self.FLOAT_TYPE(lat_range[0]), self.FLOAT_TYPE(long_range[0]),
             self.FLOAT_TYPE(lat_range[1]), self.FLOAT_TYPE(long_range[1]),
+            self.FLOAT_TYPE(idp),
             block=self.BLOCK_SIZE, grid=self.__get_grid(size))
 
         # Fetch result
