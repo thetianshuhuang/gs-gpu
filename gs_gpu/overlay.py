@@ -55,7 +55,8 @@ def interpolate_overlay(
         size=(1024, 1024),
         lat_range=(0, 1), long_range=(0, 1),
         opacity=0.6,
-        truncate=0.05, hue_range=(0, 0.3)):
+        truncate=0.05, hue_range=(0, 0.3),
+        marker_size=1):
     """Create interpolation overlay. All input arrays should match the type
     that the kernel was initialized with.
 
@@ -73,6 +74,8 @@ def interpolate_overlay(
         Truncate argument for to_image.
     hue_range : float
         Truncate argument for to_image.
+    marker_size : float
+        Size of markers. If marker_size=0, no markers are shown.
 
     Returns
     -------
@@ -102,5 +105,9 @@ def interpolate_overlay(
             [lat_range[0], long_range[0]],
             [lat_range[1], long_range[1]]]
     ))
+
+    if marker_size > 0:
+        for x, y in zip(latitudes, longitudes):
+            folium.CircleMarker((x, y), radius=marker_size).add_to(map_)
 
     return map_, interp, image
