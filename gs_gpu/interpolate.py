@@ -200,9 +200,14 @@ class BaseInterpolation:
             Generated rasterized interpolation image.
         """
 
-        # Weights should default to ones
+        # Weights
         if weights is None:
-            weights = np.ones(values.shape, dtype=self.FLOAT_TYPE)
+            # Kernel-specific weight function
+            if hasattr(self, 'weights'):
+                weights = self.weights(latitudes, longitudes, values, **kwargs)
+            # All weighted equally
+            else:
+                weights = np.ones(values.shape, dtype=self.FLOAT_TYPE)
 
         # Check shapes
         if(
