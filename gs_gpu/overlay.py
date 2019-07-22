@@ -2,6 +2,7 @@
 
 import folium
 from folium import raster_layers
+from folium.plugins import FastMarkerCluster
 
 from matplotlib import colors
 import numpy as np
@@ -57,6 +58,8 @@ def interpolate_overlay(
         opacity=0.6,
         truncate=0.05, hue_range=(0, 0.3),
         marker_size=1,
+        use_fmc=True,
+        tiles='Stamen Terrain',
         weights=None):
     """Create interpolation overlay. All input arrays should match the type
     that the kernel was initialized with.
@@ -79,6 +82,12 @@ def interpolate_overlay(
         Truncate argument for to_image.
     marker_size : float
         Size of markers. If marker_size=0, no markers are shown.
+    tiles : str
+        Tile type to use for folium map. Defaults to 'Stamen Terrain'.
+    use_fmc : bool
+        If True, uses FastMarkerClusters to avoid jupyter notebook limitations.
+        WARNING: if you set use_fmc to false, large datasets (>1000 points) may
+        cause the map to refuse to display on Jupyter notebooks.
 
     Returns
     -------
@@ -99,7 +108,7 @@ def interpolate_overlay(
         location=(
             (lat_range[0] + lat_range[1]) / 2,
             (long_range[0] + long_range[1]) / 2),
-        tiles='Stamen Terrain',
+        tiles=tiles,
         zoom_start=8)
 
     map_.add_child(raster_layers.ImageOverlay(
@@ -110,7 +119,11 @@ def interpolate_overlay(
     ))
 
     if marker_size > 0:
-        for x, y in zip(latitudes, longitudes):
-            folium.CircleMarker((x, y), radius=marker_size).add_to(map_)
+        if use_fmc:
+            FastMarkerCluster(
+                data=list(zip(latitudes, longitudes))).add_to(map_)
+        else:
+            for x, y in zip(latitudes, longitudes):
+                folium.CircleMarker((x, y), radius=marker_size).add_to(map_)
 
     return map_, interp, image
