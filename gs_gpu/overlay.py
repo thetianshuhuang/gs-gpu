@@ -56,7 +56,8 @@ def interpolate_overlay(
         lat_range=(0, 1), long_range=(0, 1),
         opacity=0.6,
         truncate=0.05, hue_range=(0, 0.3),
-        marker_size=1):
+        marker_size=1,
+        weights=None):
     """Create interpolation overlay. All input arrays should match the type
     that the kernel was initialized with.
 
@@ -70,6 +71,8 @@ def interpolate_overlay(
         Longitude array
     values : np.array
         Values array
+    weights : np.array
+        Weights array; defaults to all 1
     truncate : float
         Truncate argument for to_image.
     hue_range : float
@@ -88,7 +91,7 @@ def interpolate_overlay(
 
     interp = kernel.interpolate(
         latitudes, longitudes, values,
-        size=size, lat_range=lat_range, long_range=long_range)
+        size=size, lat_range=lat_range, long_range=long_range, weights=weights)
 
     image = to_image(interp, truncate=truncate, hue_range=hue_range)
 
