@@ -46,4 +46,4 @@ class RBFInterpolation(BaseInterpolation):
                 )**0.5
                 mat[i, j] = np.exp(-1 * epsilon * dist)
 
-        return np.matmul(np.linalg.inv(mat), values)
+        return np.linalg.lstsq(mat, values)
