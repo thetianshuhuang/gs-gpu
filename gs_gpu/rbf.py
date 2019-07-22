@@ -4,7 +4,7 @@ from .interpolate import BaseInterpolation
 import numpy as np
 
 
-__MOD_RBF_WEIGHT = """
+_MOD_RBF_WEIGHT = """
 /**
  * Weight function kernel
  * x1 : first point lat
@@ -21,7 +21,7 @@ __device__ {f} weight_function({f} x1, {f} y1, {f} x2, {f} y2, {f} epsilon)
 
 
 class RBFInterpolation(BaseInterpolation):
-    WEIGHT_FUNCTION = __MOD_RBF_WEIGHT
+    WEIGHT_FUNCTION = _MOD_RBF_WEIGHT
 
     OTHER_ARGS = "{f} epsilon"
     OTHER_WF_ARGS = "epsilon"
