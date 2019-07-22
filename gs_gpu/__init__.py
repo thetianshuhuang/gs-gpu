@@ -4,7 +4,7 @@ from .interpolate import BaseInterpolation
 from .idw import IDWInterpolation
 
 # Overlay and mapping
-from .overlay import to_image, interpolate_overlay
+from .overlay import to_image, interpolate_overlay, overlay_image
 
 
 __all__ = [
@@ -14,5 +14,6 @@ __all__ = [
 
     # Overlay and mapping
     "to_image",
-    "interpolate_overlay"
+    "interpolate_overlay",
+    "overlay_image"
 ]
