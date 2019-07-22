@@ -59,6 +59,7 @@ def interpolate_overlay(
         long_range=(0, 1),
         truncate=0.05,
         hue_range=(0, 0.3),
+        interp_kwargs={},
         **kwargs):
     """Create interpolation overlay. All input arrays should match the type
     that the kernel was initialized with.
@@ -85,6 +86,8 @@ def interpolate_overlay(
         Truncate argument for to_image.
     hue_range : float
         Truncate argument for to_image.
+    interp_kwargs : dict
+        Extra keyword args for kernel.interpolate().
     **kwargs : dict
         args to pass to overlay_image.
 
@@ -99,7 +102,8 @@ def interpolate_overlay(
 
     interp = kernel.interpolate(
         latitudes, longitudes, values,
-        size=size, lat_range=lat_range, long_range=long_range, weights=weights)
+        size=size, lat_range=lat_range, long_range=long_range, weights=weights,
+        **interp_kwargs)
 
     image = to_image(interp, truncate=truncate, hue_range=hue_range)
 
