@@ -58,7 +58,8 @@ __global__ void interpolate(
         {f} total_weight = 0;
         for(int idx = 0; idx < size; idx++) {{
             {f} weight = weights[idx] * weight_function(
-                lat_arr[idx], long_arr[idx], lat_pt, long_pt, idp);
+                lat_arr[idx], long_arr[idx], lat_pt, long_pt,
+                {other_args_as_param});
             total_weight += weight;
             acc += weight * val[idx];
         }}
